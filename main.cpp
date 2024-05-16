@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "../gui/gui.h"
-#include "../gui/ImGuiExtensions.h"
-#include "../External/ImGui/imgui_internal.h"
-#include "../Helpers.h"
+#include "gui/gui.h"
+#include "gui/ImGuiExtensions.h"
+#include "External/ImGui/imgui_internal.h"
+#include "Helpers.h"
 
 int OnGui()
 {
