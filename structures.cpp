@@ -1092,3 +1092,45 @@ void TriangulationMesh::TriangulateWeighted() {
     GetMeshStats();
     _are_stats_dirty = true;
 }
+
+VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *egs_file_name, Vec2 scale, Vec2 offset) {
+    using namespace std;
+
+    // Read points
+    fstream file(pts_file_name);
+
+    if(!file.good())
+        return;
+
+    size_t size = 0;
+    file >> size;
+
+    vtx.resize(size);
+
+    Vec2 point;
+    int i = 0;
+    while(file >> point.x && file >> point.y) {
+        vtx[i++] = point * scale + offset;
+    }
+
+    file.close();
+
+    // Read edges
+    file = fstream(egs_file_name);
+    if(!file.good())
+        return;
+
+    file >> size;
+    edges.resize(size);
+
+    Edge edge;
+    i = 0;
+    while(file >> edge.start && file >> edge.end) {
+        edges[i++] = edge;
+    }
+}
+
+// Not Yet Implemented
+void VoronoiDiagram::RecalculateVoronoi() {
+
+}

@@ -189,7 +189,6 @@ struct Triangle
     }
 };
 
-
 struct PointCloud {
     struct CloudPoint : public Vec2 {
         bool include_in_hull = false;
@@ -293,6 +292,18 @@ private:
     }
 };
 
+struct VoronoiDiagram {
+    std::vector<Vec2> vtx; // vertices
+    std::vector<int> idx; // indices
+    std::vector<Edge> edges;
+    std::vector<std::vector<int>> elements; // cells
+
+    // Only reads the data
+    VoronoiDiagram(const char* pts_file_name, const char* egs_file_name, Vec2 scale = {1,1}, Vec2 offset = {0,0});
+    VoronoiDiagram() = default;
+
+    void RecalculateVoronoi();
+};
 
 struct StructuredPolygon{
     std::vector<Vec2> points;
@@ -403,6 +414,8 @@ private:
 };
 
 inline std::ostream& operator<<(std::ostream& stream, MeshElement<3> &tri) { stream << tri.points[0] << '\t' << tri.points[1] << '\t' << tri.points[2] << '\n'; return stream;};
+
+
 
 struct RangeTree1D {
     struct Node {
