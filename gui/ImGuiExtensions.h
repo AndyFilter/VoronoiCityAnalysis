@@ -38,6 +38,7 @@ namespace ImGui {
                                 Vec2 pos_offset = {0,0});
     int DrawTree1D(RangeTree1D* tree, Vec2 pos);
     int DrawTree2D(RangeTree2D* tree, Vec2 pos);
+    void DrawVoronoi(VoronoiDiagram& voronoi, Vec2 scale, Vec2 offset);
 
     // User Configured Parameters
     bool DirectionalLineParams(DirectionalLineFunc& func);

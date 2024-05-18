@@ -181,6 +181,24 @@ int ImGui::DrawTree2D(RangeTree2D *tree, Vec2 pos) {
     return 0;
 }
 
+void ImGui::DrawVoronoi(VoronoiDiagram& voronoi, Vec2 scale, Vec2 offset) {
+    auto dl = ImGui::GetWindowDrawList();
+    for(auto& p : voronoi.vtx) {
+        dl->AddCircleFilled(ImGui::Local2Canvas(p, scale, offset), 3, POINT_BASE_COLOR);
+    }
+
+    //for(auto& p : voronoi.points) {
+    //    is_dirty |= DrawPoint(ImGui::Local2Canvas(p, scale, offset), "", dl, 5, POINT_SPECIAL_COLOR);
+    //}
+
+    for(auto& r : voronoi.elements) {
+        for (int i = 0; i < r.size(); i++) {
+            dl->AddLine(ImGui::Local2Canvas(voronoi.vtx[r[i]], scale, offset),
+                        ImGui::Local2Canvas(voronoi.vtx[r[(i + 1) % r.size()]], scale, offset), LINE_BASE_COLOR);
+        }
+    }
+}
+
 bool ImGui::DirectionalLineParams(DirectionalLineFunc &func) {
 
     ImGui::Text("y ="); ImGui::SameLine();

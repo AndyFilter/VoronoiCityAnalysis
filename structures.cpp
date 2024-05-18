@@ -1,6 +1,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <map>
+#include <sstream>
 
 #include "structures.h"
 
@@ -1093,8 +1094,10 @@ void TriangulationMesh::TriangulateWeighted() {
     _are_stats_dirty = true;
 }
 
-VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *egs_file_name, Vec2 scale, Vec2 offset) {
+VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *vtx_file_name, const char *cells_file_name,
+                               Vec2 scale, Vec2 offset){
     using namespace std;
+    size_t size;
 
     // Read points
     fstream file(pts_file_name);
@@ -1102,35 +1105,64 @@ VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *egs_file_n
     if(!file.good())
         return;
 
-    size_t size = 0;
+    size = 0;
     file >> size;
 
-    vtx.resize(size);
+    points.resize(size);
 
     Vec2 point;
     int i = 0;
     while(file >> point.x && file >> point.y) {
-        vtx[i++] = point * scale + offset;
+        points[i++] = point * scale + offset;
     }
 
     file.close();
 
-    // Read edges
-    file = fstream(egs_file_name);
+    // Read calculated voronoi vertices
+    file = fstream(vtx_file_name);
     if(!file.good())
         return;
 
     file >> size;
-    edges.resize(size);
+    vtx.resize(size);
 
-    Edge edge;
     i = 0;
-    while(file >> edge.start && file >> edge.end) {
-        edges[i++] = edge;
+    while(file >> point.x && file >> point.y) {
+        vtx[i++] = point * scale + offset;
+    }
+
+    // Read cells
+    file = fstream(cells_file_name);
+    if(!file.good())
+        return;
+
+    file >> size;
+    elements.resize(size);
+
+    int edge_idx;
+    i = 0;
+    std::string line;
+    std::getline(file, line); // Read empty line (size)
+    while (std::getline(file, line)) {
+        stringstream ss (line);
+        while(ss >> edge_idx) {
+            elements[i].push_back(edge_idx);
+        }
+        i++;
     }
 }
 
 // Not Yet Implemented
 void VoronoiDiagram::RecalculateVoronoi() {
 
+
+    // Recalculate Elements at the end
+    RecalculateElements();
+}
+
+// Not Yet Implemented
+void VoronoiDiagram::RecalculateElements() {
+    for(Edge& e: edges) {
+        // Find edges that make up a cell (recursion (DFS) is not a bad idea I think, especially if you look at it as a graph)
+    }
 }

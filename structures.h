@@ -63,7 +63,7 @@ inline std::ostream& operator<<(std::ostream& stream, Vec2 pos) { stream << pos.
 
 struct Circle;
 
-struct Edge{
+struct Edge {
     int start = 0, end = 0;
 
     Edge() = default;
@@ -293,16 +293,21 @@ private:
 };
 
 struct VoronoiDiagram {
-    std::vector<Vec2> vtx; // vertices
-    std::vector<int> idx; // indices
+    std::vector<Vec2> points; // input points / vertices
+    std::vector<Vec2> vtx; // voronoi vertices
     std::vector<Edge> edges;
     std::vector<std::vector<int>> elements; // cells
 
-    // Only reads the data
-    VoronoiDiagram(const char* pts_file_name, const char* egs_file_name, Vec2 scale = {1,1}, Vec2 offset = {0,0});
+    // UI
+    std::vector<float> areas; // areas[i] = area(elements[i]) [CACHE]
+
+    // Only reads the data (doesn't update edges!)
+    VoronoiDiagram(const char* pts_file_name, const char* vtx_file_name, const char* cells_file_name, Vec2 scale = {1,1}, Vec2 offset = {0,0});
     VoronoiDiagram() = default;
 
     void RecalculateVoronoi();
+    // Calculates elements from edges, and their respective areas
+    void RecalculateElements();
 };
 
 struct StructuredPolygon{
