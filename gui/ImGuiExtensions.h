@@ -26,6 +26,7 @@
 #define DELETE_BUTTON_HUE 0.988f //0xFFD33F49
 
 #define CANVAS_SIZE 10.f
+#define CANVAS_AREA (CANVAS_SIZE * CANVAS_SIZE)
 
 namespace ImGui {
     bool DrawPoint(Vec2 pos, const char* label, ImDrawList* dl, float radius = POINT_BASE_RADIUS, ImU32 col = POINT_BASE_COLOR);

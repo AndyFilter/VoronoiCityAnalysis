@@ -193,8 +193,22 @@ void ImGui::DrawVoronoi(VoronoiDiagram& voronoi, Vec2 scale, Vec2 offset) {
 
     for(auto& r : voronoi.elements) {
         for (int i = 0; i < r.size(); i++) {
-            dl->AddLine(ImGui::Local2Canvas(voronoi.vtx[r[i]], scale, offset),
-                        ImGui::Local2Canvas(voronoi.vtx[r[(i + 1) % r.size()]], scale, offset), LINE_BASE_COLOR);
+            int i1 = r[i], i2 = r[(i + 1) % r.size()];
+            Vec2 pos1, pos2;
+            if(i1 < 0) {
+                Vec2 dir = voronoi.vtx[i2] - voronoi.vtx[r[(i + 2) % r.size()]];
+                pos1 = dir * 1000;
+            }
+            else pos1 = voronoi.vtx[i1];
+
+            if(i2 < 0) {
+                Vec2 dir = voronoi.vtx[r[(i + 2) % r.size()]] - voronoi.vtx[r[(i + 3) % r.size()]];
+                pos2 = dir * 1000;
+            }
+            else pos2 = voronoi.vtx[i2];
+
+            dl->AddLine(ImGui::Local2Canvas(pos1, scale, offset),
+                        ImGui::Local2Canvas(pos2, scale, offset), LINE_BASE_COLOR);
         }
     }
 }

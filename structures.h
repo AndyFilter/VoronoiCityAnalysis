@@ -72,6 +72,8 @@ struct Edge {
 
 inline std::istream& operator>>(std::istream& stream, Edge &edg) { stream >> edg.start; stream >> edg.end; return stream;};
 
+struct TriangulationMesh;
+
 struct Rect {
     Vec2 min, max;
 
@@ -292,32 +294,6 @@ private:
     }
 };
 
-struct VoronoiDiagram {
-    std::vector<Vec2> points; // input points / vertices
-    std::vector<Vec2> vtx; // voronoi vertices
-    std::vector<Edge> edges;
-    std::vector<std::vector<int>> elements; // cells
-
-    // UI
-    std::vector<float> areas; // areas[i] = area(elements[i]) [CACHE]
-
-    // Only reads the data (doesn't update edges!)
-    VoronoiDiagram(const char* pts_file_name, const char* vtx_file_name, const char* cells_file_name, Vec2 scale = {1,1}, Vec2 offset = {0,0});
-    VoronoiDiagram() = default;
-
-    void RecalculateVoronoi();
-    // Calculates elements from edges, and their respective areas
-    void RecalculateElements();
-};
-
-struct StructuredPolygon{
-    std::vector<Vec2> points;
-    std::vector<Edge> edges;
-
-    StructuredPolygon() = default;
-    StructuredPolygon(const char* pts_file_name, const char* egs_file_name, Vec2 scale = {1,1}, Vec2 offset = {0,0});
-};
-
 template<int n = 3>
 struct MeshElement{
     int points[n]{0};
@@ -384,6 +360,40 @@ private:
     Triangle _GetTriangleFromElement(MeshElement<3> elem) {
         return {pc.points[elem.points[0]],pc.points[elem.points[1]],pc.points[elem.points[2]]};
     }
+};
+
+struct VoronoiDiagram {
+    //std::vector<Vec2> points; // input points / vertices
+    PointCloud pc = mesh.pc; // input points / vertices
+    std::vector<Vec2> vtx; // voronoi vertices
+    std::vector<Edge> edges;
+    std::vector<std::vector<int>> elements; // cells
+    std::vector<Vec2> elements_midpoints;
+
+    // UI
+    std::vector<float> areas; // areas[i] = area(elements[i]) [CACHE]
+
+    // Only reads the data (doesn't update edges!)
+    VoronoiDiagram(const char* pts_file_name, const char* vtx_file_name, const char* cells_file_name, Vec2 scale = {1,1}, Vec2 offset = {0,0});
+    VoronoiDiagram() = default;
+
+    void RecalculateVoronoi();
+    // Calculates elements from edges, and their respective areas
+    void RecalculateElements();
+
+private:
+    void RecalculateAreas();
+    void RecalculateMidpoints();
+
+    TriangulationMesh mesh = TriangulationMesh();
+};
+
+struct StructuredPolygon{
+    std::vector<Vec2> points;
+    std::vector<Edge> edges;
+
+    StructuredPolygon() = default;
+    StructuredPolygon(const char* pts_file_name, const char* egs_file_name, Vec2 scale = {1,1}, Vec2 offset = {0,0});
 };
 
 struct TriangleMesh {

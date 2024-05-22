@@ -1,15 +1,20 @@
-from scipy.spatial import Voronoi, voronoi_plot_2d
+from scipy.spatial import Voronoi, voronoi_plot_2d, Delaunay
 import numpy as np
 import matplotlib.pyplot as plt
 
-NUM_POINTS = 100
+NUM_POINTS = 50
+SIZE = 7
 
-points = np.random.rand(NUM_POINTS, 2) * 20 - 10
+points = np.random.rand(NUM_POINTS, 2) * (SIZE * 2) - SIZE
 
 # Do the thing
 vor = Voronoi(points)
 
+tri = Delaunay(points)
+
 fig = voronoi_plot_2d(vor)
+plt.triplot(points[:,0], points[:,1], tri.simplices)
+plt.plot(points[:,0], points[:,1], 'o')
 plt.show()
 
 regions = []

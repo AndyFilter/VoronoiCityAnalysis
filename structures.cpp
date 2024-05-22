@@ -831,7 +831,10 @@ void TriangulationMesh::RecalculateMesh(Triangulate_Method method) {
     if(method == Triangulate_Delaunay) {
         // First 3 points are the super triangle
         superTriangle = _GenerateSuperTriangle();
-        std::copy(pc.points.begin(), pc.points.begin() + 3, superTriangle.vtx);
+        //std::copy(pc.points.begin(), pc.points.begin() + 3, superTriangle.vtx);
+        pc.points[0] = superTriangle.vtx[0];
+        pc.points[1] = superTriangle.vtx[1];
+        pc.points[2] = superTriangle.vtx[2];
         elements.push_back({0,1,2});
 
         TriangulateDelaunay();
@@ -1098,9 +1101,13 @@ VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *vtx_file_n
                                Vec2 scale, Vec2 offset){
     using namespace std;
     size_t size;
+    Vec2 point;
+    int i = 0;
+    fstream file;
 
     // Read points
-    fstream file(pts_file_name);
+    //pc = PointCloud(pts_file_name, scale.x, offset);
+    file = fstream(pts_file_name);
 
     if(!file.good())
         return;
@@ -1108,12 +1115,11 @@ VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *vtx_file_n
     size = 0;
     file >> size;
 
-    points.resize(size);
+    pc.points.resize(size+3);
 
-    Vec2 point;
-    int i = 0;
+    i = 3;
     while(file >> point.x && file >> point.y) {
-        points[i++] = point * scale + offset;
+        pc.points[i++] = point * scale + offset;
     }
 
     file.close();
@@ -1130,6 +1136,8 @@ VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *vtx_file_n
     while(file >> point.x && file >> point.y) {
         vtx[i++] = point * scale + offset;
     }
+
+    file.close();
 
     // Read cells
     file = fstream(cells_file_name);
@@ -1150,19 +1158,116 @@ VoronoiDiagram::VoronoiDiagram(const char *pts_file_name, const char *vtx_file_n
         }
         i++;
     }
+
+    file.close();
+
+    RecalculateMidpoints();
+    RecalculateAreas();
 }
 
-// Not Yet Implemented
 void VoronoiDiagram::RecalculateVoronoi() {
+    vtx.clear();
+    elements.clear();
 
+    // Delaunay Method
+#pragma region DELAUNAY
+
+    //mesh = TriangulationMesh();
+    mesh.pc = pc;//std::move(pc); // That's so slow ),:
+    //mesh.pc.points.resize(points.size() + 3);
+    //for(int i = 0; i < points.size(); i++) mesh.pc.points[i+3] = points[i];
+
+    mesh.RecalculateMesh(TriangulationMesh::Triangulate_Delaunay);
+
+    // point -> vertices that build region around it. (point is a point of Delaunay's mesh and vertices are local to Voronoi)
+    std::unordered_map<int, std::unordered_set<int>> point2vtxs;
+
+    for(int i = 0; i < mesh.elements.size(); i++) {
+        const auto& e = mesh.elements[i];
+
+        auto c = GetTriangleCircumscribedCircle(Triangle(mesh.pc.points[e.points[0]], mesh.pc.points[e.points[1]], mesh.pc.points[e.points[2]]));
+        vtx.push_back(c.pos);
+
+        // loop through elements vertices
+        for(int elem : e.points) {
+            // Insert next point belonging to the 3 vertices
+            if(auto it = point2vtxs.find(elem); it != point2vtxs.end())
+                it->second.insert(i);
+            else
+                point2vtxs[elem] = {i};
+        }
+    }
+
+    // Just for debugging
+    //for(const auto& [idx, elems] : point2vtxs) {
+    //    printf("for point %i:\n", idx);
+    //    for (const auto &item: elems) {
+    //        printf("%i, ", item);
+    //    }
+    //    printf("\n");
+    //}
+
+    // Need a way of detecting "empty" regions
+    // (3 vertices, 2 of which on the outline)!
+    for(const auto& [idx, elems] : point2vtxs) {
+        if(elems.size() > 2) {
+            elements.emplace_back(elems.begin(), elems.end());
+        }
+    }
+
+#pragma endregion DELAUNAY // Delaunay Method
+
+    // Recalculate triangles' mid-points
+    RecalculateMidpoints();
 
     // Recalculate Elements at the end
     RecalculateElements();
+
+    // Recalculate area of each element
+    RecalculateAreas();
 }
 
 // Not Yet Implemented
 void VoronoiDiagram::RecalculateElements() {
     for(Edge& e: edges) {
         // Find edges that make up a cell (recursion (DFS) is not a bad idea I think, especially if you look at it as a graph)
+        // Should be the same as finding all cycles in a graph, except we dont want "all" the cycles, just the small ones
+    }
+}
+
+void VoronoiDiagram::RecalculateAreas() {
+    areas.resize(elements.size());
+    for(int idx = 0; idx < elements.size(); idx++) {
+        auto& e = elements[idx];
+
+        // Sort points clockwise with respect to the region's center
+        std::sort(e.begin(), e.end(), [&](int i, int j) {
+            Vec2 a = this->vtx[i], b = this->vtx[j];
+            auto center = this->elements_midpoints[idx];
+
+            float angle1 = atan2f(a.y - center.y, a.x - center.x);
+            float angle2 = atan2f(b.y - center.y, b.x - center.x);
+
+            return angle1 > angle2;
+        });
+
+        float area = 0;
+        int n = static_cast<int>(e.size());
+        for(int i = 0; i < n; i++) {
+            area += vtx[e[i]].x * vtx[e[(i + 1) % n]].y - (vtx[e[i]].y * vtx[e[(i + 1) % n]].x);
+        }
+        areas[idx] = abs(area) * 0.5f;
+    }
+}
+
+void VoronoiDiagram::RecalculateMidpoints() {
+    elements_midpoints.resize(elements.size());
+    for(int idx = 0; idx < elements.size(); idx++) {
+        auto& e = elements[idx];
+        Vec2 pos = {0,0};
+        for(int i : e) {
+            pos += vtx[i];
+        }
+        elements_midpoints[idx] = pos / static_cast<float>(e.size());
     }
 }
