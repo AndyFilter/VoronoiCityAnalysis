@@ -1180,7 +1180,8 @@ void VoronoiDiagram::RecalculateVoronoi() {
     mesh.RecalculateMesh(TriangulationMesh::Triangulate_Delaunay);
 
     // point -> vertices that build region around it. (point is a point of Delaunay's mesh and vertices are local to Voronoi)
-    std::unordered_map<int, std::unordered_set<int>> point2vtxs;
+    std::map<int, std::unordered_set<int>> point2vtxs;
+    // use ordered map to preserve the connection points[i] -> elements[i+3]
 
     for(int i = 0; i < mesh.elements.size(); i++) {
         const auto& e = mesh.elements[i];
@@ -1199,18 +1200,25 @@ void VoronoiDiagram::RecalculateVoronoi() {
     }
 
     // Just for debugging
-    //for(const auto& [idx, elems] : point2vtxs) {
-    //    printf("for point %i:\n", idx);
-    //    for (const auto &item: elems) {
-    //        printf("%i, ", item);
-    //    }
-    //    printf("\n");
-    //}
+    for(const auto& [idx, elems] : point2vtxs) {
+        printf("for point %i:\n", idx);
+        for (const auto &item: elems) {
+            printf("%i, ", item);
+        }
+        printf("\n");
+    }
 
     // Need a way of detecting "empty" regions
-    // (3 vertices, 2 of which on the outline)!
     for(const auto& [idx, elems] : point2vtxs) {
         if(elems.size() > 2) {
+            //Polygon poly;
+            //poly.vtx.resize(elems.size());
+            //int i = 0;
+            //for (const auto &item: elems) {
+            //    poly.vtx[i++] = vtx[item];
+            //}
+            //if(!poly.PointTest(pc.points[idx]))
+            //    continue;
             elements.emplace_back(elems.begin(), elems.end());
         }
     }
@@ -1236,6 +1244,7 @@ void VoronoiDiagram::RecalculateElements() {
 }
 
 void VoronoiDiagram::RecalculateAreas() {
+    const int canvas_size = 10;
     areas.resize(elements.size());
     for(int idx = 0; idx < elements.size(); idx++) {
         auto& e = elements[idx];
@@ -1254,7 +1263,47 @@ void VoronoiDiagram::RecalculateAreas() {
         float area = 0;
         int n = static_cast<int>(e.size());
         for(int i = 0; i < n; i++) {
-            area += vtx[e[i]].x * vtx[e[(i + 1) % n]].y - (vtx[e[i]].y * vtx[e[(i + 1) % n]].x);
+            Vec2 p1 = vtx[e[i]]._Clamp(-canvas_size, canvas_size);
+            Vec2 p2 = vtx[e[(i + 1) % n]]._Clamp(-canvas_size, canvas_size);
+            if(std::fabs(p1.x) > canvas_size || std::fabs(p1.y) > canvas_size) {
+                // Attempt 1
+                //if (p1.x < 0) {
+                //    if (p1.y < 0) {
+                //        p1 = {-10, -10};
+                //    }
+                //    if (p1.y > 0) {
+                //        p1 = {-10, 10};
+                //    }
+                //}
+                //if (p1.x > 0) {
+                //    if (p1.y < 0) {
+                //        p1 = {10, -10};
+                //    }
+                //    if (p1.y > 0) {
+                //        p1 = {10, 10};
+                //    }
+                //}
+
+                // Attempt 2 (actually reasonable, just gotta check against 2 edges instead of one)
+                //GeneralLineFunc center2point = GeneralLineFunc(p1, elements_midpoints[i]);
+                //if (p1.x < 0) { // Left
+                //    if (p1.y < 0) { // Up
+                //        p1 = center2point.GetCollisionPoint(GeneralLineFunc(Vec2(-canvas_size, -canvas_size), Vec2(canvas_size, -canvas_size))); // Upper side
+                //    }
+                //    if (p1.y > 0) { // Down
+                //        p1 = center2point.GetCollisionPoint(GeneralLineFunc(Vec2(-canvas_size, -canvas_size), Vec2(-canvas_size, canvas_size))); // Left side
+                //    }
+                //}
+                //if (p1.x > 0) { // Right
+                //    if (p1.y < 0) { // Up
+                //        p1 = center2point.GetCollisionPoint(GeneralLineFunc(Vec2(canvas_size, canvas_size), Vec2(canvas_size, -canvas_size))); // Lower side
+                //    }
+                //    if (p1.y > 0) { // Down
+                //        p1 = center2point.GetCollisionPoint(GeneralLineFunc(Vec2(canvas_size, canvas_size), Vec2(-canvas_size, canvas_size))); // Right side
+                //    }
+                //}
+            }
+            area += p1.x * p2.y - (p1.y * p2.x);
         }
         areas[idx] = abs(area) * 0.5f;
     }

@@ -89,22 +89,35 @@ int OnGui()
                 for (int e : sample_voronoi->elements[i]) {
                     dl->PathLineTo(ImGui::Local2Canvas(sample_voronoi->vtx[e], avail, startPos));
                 }
-
                 dl->PathFillConvex(ImColor::HSV(0/360.f, 45/100.f, sqrtf(sample_voronoi->areas[i] / (CANVAS_AREA * CITY_SCALE)), 0.3f));
+
+                //char _buf[16];
+                //sprintf(_buf, "%i", i);
+                //ImGui::DrawPoint(ImGui::Local2Canvas(sample_voronoi->elements_midpoints[i], avail, startPos), _buf, dl, 4);
             }
 
         for(int i = 3; i < sample_voronoi->pc.points.size(); i++) {
+            char _buf[16];
+
             auto& p = sample_voronoi->pc.points[i];
+            //sprintf(_buf, "%i", i);
             if(ImGui::DrawPoint(ImGui::Local2Canvas(p, avail, startPos), "", dl, 5, POINT_SPECIAL_COLOR) && ImGui::IsMouseClicked(0)) {
                 dragging_point = &p;
             }
+
+            Vec2 pos = ImGui::Local2Canvas(sample_voronoi->pc.points[i], avail, startPos);
+            Rect bb = {pos - Vec2(50, 20), pos + Vec2(50, 0)};
+            //char _buf[32];
+            sprintf(_buf, "%i", static_cast<int>(round(sample_voronoi->areas[i-3] / CANVAS_AREA * (float)population)));
+            ImGui::RenderTextClipped(bb.min, bb.max, _buf, nullptr, nullptr, {0.5, 0.5});
         }
 
-        //for(int i = 0; i < sample_voronoi.elements.size(); i++) {
-        //    Vec2 pos = ImGui::Local2Canvas(sample_voronoi.elements_midpoints[i], avail, startPos);
+        // Display population on each element
+        //for(int i = 0; i < sample_voronoi->elements.size(); i++) {
+        //    Vec2 pos = ImGui::Local2Canvas(sample_voronoi->elements_midpoints[i], avail, startPos);
         //    Rect bb = {pos - Vec2(50, 20), pos + Vec2(50, 20)};
         //    char _buf[32];
-        //    sprintf(_buf, "%i", static_cast<int>(round(sample_voronoi.areas[i] / CANVAS_AREA * (float)population)));
+        //    sprintf(_buf, "%i", static_cast<int>(round(sample_voronoi->areas[i] / CANVAS_AREA * (float)population)));
         //    ImGui::RenderTextClipped(bb.min, bb.max, _buf, nullptr, nullptr, {0.5, 0.5});
         //}
 
@@ -113,6 +126,18 @@ int OnGui()
         //    char _buf[16];
         //    sprintf(_buf, "%i", i++);
         //    ImGui::DrawPoint(ImGui::Local2Canvas(item, avail, startPos), _buf, dl);
+        //}
+
+        //for(int i = 0; i < sample_voronoi->pc.points.size(); i++) {
+        //    char _buf[16];
+        //    sprintf(_buf, "%i", i);
+        //    ImGui::DrawPoint(ImGui::Local2Canvas(sample_voronoi->pc.points[i], avail, startPos), _buf, dl);
+        //}
+        //
+        //for(int i = 0; i < sample_voronoi->vtx.size(); i++) {
+        //    char _buf[16];
+        //    sprintf(_buf, "%i", i);
+        //    ImGui::DrawPoint(ImGui::Local2Canvas(sample_voronoi->vtx[i], avail, startPos), _buf, dl);
         //}
 
         //for(int i = 0; i < mesh.elements.size(); i++) {
@@ -164,13 +189,19 @@ int main() {
 
     srand(time(nullptr));
 
+    const int city_bound_size = 20;
+    std::vector<PointCloud::CloudPoint> corners({{{-city_bound_size, -city_bound_size}}, {{city_bound_size, -city_bound_size}},
+                                                 {{city_bound_size, city_bound_size}}, {{-city_bound_size, city_bound_size}}});
+
     // Populate the Voronois
     for(auto& v : voronois) {
         for(int i = 3; i < CITY_POINTS + 3; i++) {
-            v.pc.points.push_back(Vec2(rand() * CANVAS_SIZE * 2 * CITY_SCALE / RAND_MAX,
+            v.pc.points.emplace_back(Vec2(rand() * CANVAS_SIZE * 2 * CITY_SCALE / RAND_MAX,
                                        rand() * CANVAS_SIZE * 2 * CITY_SCALE / RAND_MAX)
                                        - (CANVAS_SIZE * CITY_SCALE));
         }
+        // Add corner points to make "infinite" regions possible and visible
+        v.pc.points.insert(v.pc.points.end(), corners.begin(), corners.end());
     }
 
     while (true) {

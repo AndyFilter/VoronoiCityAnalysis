@@ -39,6 +39,8 @@ public:
     inline const Vec2 Clamp(Vec2 mn, Vec2 mx) { x = clamp(x, mn.x, mx.x); y = clamp(y, mn.y, mx.y); return *this; };
     inline const Vec2 Clamp(float mn, float mx) { x = clamp(x, mn, mx); y = clamp(y, mn, mx); return *this; };
 
+    inline const Vec2 _Clamp(float mn, float mx) { return {clamp(x, mn, mx), clamp(y, mn, mx)};  };
+
     Vec2 operator=(const Vec2& other) { return { this->x = other.x, this->y = other.y }; }
     Vec2 operator+(const Vec2& other) { return { this->x + other.x, this->y + other.y }; }
     Vec2 operator-(const Vec2& other) { return { this->x - other.x, this->y - other.y }; }
@@ -98,7 +100,7 @@ struct GeneralLineFunc
             B(P1.x - P2.x),
             C(P1.y * (P2.x - P1.x) - (P2.y - P1.y) * P1.x) {};
 
-    Vec2 GetCollisionPoint(GeneralLineFunc& other) const { float denominator = B*other.A - A*other.B;
+    Vec2 GetCollisionPoint(GeneralLineFunc other) const { float denominator = B*other.A - A*other.B;
         return Vec2(( C*other.B - B*other.C) / denominator, ( A*other.C - C*other.A) / denominator);
     }
 
