@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 
 #include "gui/gui.h"
 #include "gui/ImGuiExtensions.h"
@@ -193,12 +194,17 @@ int main() {
     std::vector<PointCloud::CloudPoint> corners({{{-city_bound_size, -city_bound_size}}, {{city_bound_size, -city_bound_size}},
                                                  {{city_bound_size, city_bound_size}}, {{-city_bound_size, city_bound_size}}});
 
+    std::default_random_engine generator(time(NULL));
+    std::normal_distribution<float> distr(0.0f, CANVAS_SIZE * 0.4f * CITY_SCALE);
     // Populate the Voronois
     for(auto& v : voronois) {
         for(int i = 3; i < CITY_POINTS + 3; i++) {
-            v.pc.points.emplace_back(Vec2(rand() * CANVAS_SIZE * 2 * CITY_SCALE / RAND_MAX,
-                                       rand() * CANVAS_SIZE * 2 * CITY_SCALE / RAND_MAX)
-                                       - (CANVAS_SIZE * CITY_SCALE));
+//            v.pc.points.emplace_back(Vec2(rand() * CANVAS_SIZE * 2 * CITY_SCALE / RAND_MAX,
+//                                       rand() * CANVAS_SIZE * 2 * CITY_SCALE / RAND_MAX)
+//                                       - (CANVAS_SIZE * CITY_SCALE));
+            v.pc.points.emplace_back(Vec2(distr(generator),
+                                          distr(generator))
+                                          ._Clamp(-CANVAS_SIZE * CITY_SCALE, CANVAS_SIZE * CITY_SCALE));
         }
         // Add corner points to make "infinite" regions possible and visible
         v.pc.points.insert(v.pc.points.end(), corners.begin(), corners.end());
