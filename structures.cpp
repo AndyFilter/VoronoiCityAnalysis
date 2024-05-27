@@ -1200,13 +1200,13 @@ void VoronoiDiagram::RecalculateVoronoi() {
     }
 
     // Just for debugging
-    for(const auto& [idx, elems] : point2vtxs) {
-        printf("for point %i:\n", idx);
-        for (const auto &item: elems) {
-            printf("%i, ", item);
-        }
-        printf("\n");
-    }
+//    for(const auto& [idx, elems] : point2vtxs) {
+//        printf("for point %i:\n", idx);
+//        for (const auto &item: elems) {
+//            printf("%i, ", item);
+//        }
+//        printf("\n");
+//    }
 
     // Need a way of detecting "empty" regions
     for(const auto& [idx, elems] : point2vtxs) {

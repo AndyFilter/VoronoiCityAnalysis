@@ -34,6 +34,9 @@ int OnGui()
 
     static bool dirty = true; // denotes whether the parameters have changed
     static bool show_areas = false;
+//    static bool add_mode = false;
+//    static bool move_mode = false;
+    static int selected_mode = 1;
 
     static Vec2* dragging_point = nullptr;
 
@@ -56,6 +59,11 @@ int OnGui()
             dirty = true;
 
         ImGui::Checkbox("Pokaż pola", &show_areas);
+//        ImGui::Checkbox("Tryb dodawania", &add_mode);
+//        ImGui::Checkbox("Tryb przenoszenia", &move_mode);
+
+        ImGui::RadioButton("Tryb dodawania", &selected_mode, 0);
+        ImGui::RadioButton("Tryb przenoszenia", &selected_mode, 1);
 
         ImGui::Text("Populacja: %i", population);
     }
@@ -90,7 +98,7 @@ int OnGui()
                 for (int e : sample_voronoi->elements[i]) {
                     dl->PathLineTo(ImGui::Local2Canvas(sample_voronoi->vtx[e], avail, startPos));
                 }
-                dl->PathFillConvex(ImColor::HSV(0/360.f, 45/100.f, sqrtf(sample_voronoi->areas[i] / (CANVAS_AREA * CITY_SCALE)), 0.3f));
+                dl->PathFillConvex(ImColor::HSV(0/360.f, 45/100.f, sqrtf(sample_voronoi->areas[i] / (CANVAS_AREA)), 0.5f));
 
                 //char _buf[16];
                 //sprintf(_buf, "%i", i);
@@ -102,8 +110,14 @@ int OnGui()
 
             auto& p = sample_voronoi->pc.points[i];
             //sprintf(_buf, "%i", i);
-            if(ImGui::DrawPoint(ImGui::Local2Canvas(p, avail, startPos), "", dl, 5, POINT_SPECIAL_COLOR) && ImGui::IsMouseClicked(0)) {
-                dragging_point = &p;
+            if(selected_mode == 1) {
+                if (ImGui::DrawPoint(ImGui::Local2Canvas(p, avail, startPos), "", dl, 5, POINT_SPECIAL_COLOR) &&
+                    ImGui::IsMouseClicked(0)) {
+                    dragging_point = &p;
+                }
+            }
+            else {
+                dl->AddCircleFilled(ImGui::Local2Canvas(p, avail, startPos), 5, POINT_BASE_COLOR);
             }
 
             Vec2 pos = ImGui::Local2Canvas(sample_voronoi->pc.points[i], avail, startPos);
@@ -111,6 +125,14 @@ int OnGui()
             //char _buf[32];
             sprintf(_buf, "%i", static_cast<int>(round(sample_voronoi->areas[i-3] / CANVAS_AREA * (float)population)));
             ImGui::RenderTextClipped(bb.min, bb.max, _buf, nullptr, nullptr, {0.5, 0.5});
+        }
+
+        if(selected_mode == 0 && ImGui::IsMouseClicked(0)) {
+            auto mouse_pos_loc = ImGui::Canvas2Local(ImGui::GetMousePos(), avail, startPos);
+            if(std::fabs(mouse_pos_loc.x) < 10 && std::fabs(mouse_pos_loc.y) < 10) {
+                sample_voronoi->pc.points.emplace_back(ImGui::Canvas2Local(ImGui::GetMousePos(), avail, startPos));
+                dirty = true;
+            }
         }
 
         // Display population on each element
